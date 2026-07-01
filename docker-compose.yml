@@ -1,0 +1,29 @@
+version: '3.8'
+
+services:
+  # Konfigurasi Database
+  db:
+    image: postgres:15-alpine
+    restart: always
+    environment:
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: inventory_db
+    ports:
+      - "5432:5432"
+
+  # Konfigurasi Backend (Golang)
+  backend:
+    build: ./backend
+    ports:
+      - "8080:8080"
+    depends_on:
+      - db
+    environment:
+      DATABASE_URL: postgres://user:password@db:5432/inventory_db
+
+  # Konfigurasi Frontend (Vue)
+  frontend:
+    build: ./frontend
+    ports:
+      - "5173:5173"
