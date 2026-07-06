@@ -5,12 +5,11 @@ import (
 	"github.com/luthfi/inventory-pos-app/backend/models"
 )
 
-func CreateProduct(product *models.Product) error {
-	return config.DB.Create(product).Error
-}
-
-func GetAllProduct() ([]models.Product, error) {
+func GetAllProducts() ([]models.Product, error) {
 	var products []models.Product
 	err := config.DB.Find(&products).Error
 	return products, err
+}
+func SaveProduct(product *models.Product) error {
+	return config.DB.Create(product).Error
 }

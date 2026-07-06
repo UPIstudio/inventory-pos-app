@@ -1,52 +1,28 @@
 package main
 
 import (
-	"database/sql"
-	"fmt"
 	"log"
-	"os"
-	"time"
+	"net/http"
 
-	"github.com/joho/godotenv"
-	_ "github.com/lib/pq"
 	"github.com/luthfi/inventory-pos-app/backend/config"
+	"github.com/luthfi/inventory-pos-app/backend/handlers"
 )
 
 func main() {
 	config.ConnectDB()
 
-	err := godotenv.Load()
-	if err != nil {
-		log.Fatal("Gagal memuat file .env")
-	}
-
-	host := os.Getenv("DB_HOST")
-	port := os.Getenv("DB_PORT")
-	user := os.Getenv("DB_USER")
-	password := os.Getenv("DB_PASSWORD")
-	dbname := os.Getenv("DB_NAME")
-
-	dsn := fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=disable", host, port, user, password, dbname)
-
-	db, err := sql.Open("postgres", dsn)
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer db.Close()
-
-	for i := 0; i < 10; i++ {
-		err = db.Ping()
-		if err == nil {
-			log.Println("Database berhasil konek")
-			break
+	http.HandleFunc("/products", func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == http.MethodGet {
+			handlers.GetProductsHandler(w, r)
+		} else if r.Method == http.MethodPost {
+			handlers.CreateProductHandler(w, r)
+		} else {
+			http.Error(w, "Method tidak diizinkan", http.StatusMethodNotAllowed)
 		}
-		log.Printf("Menunggu database...")
-		time.Sleep(2 * time.Second)
-	}
+	})
 
-	if err != nil {
-		log.Fatal("Gagal konek ke database setelah 10 kali percobaan", err)
-	}
+	log.Println("Server berjalan      di :8080")
+	log.Fatal(http.ListenAndServe(":8080", nil))
 
 	select {}
 }
