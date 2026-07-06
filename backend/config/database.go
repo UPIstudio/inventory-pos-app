@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"time"
 
 	"github.com/luthfi/inventory-pos-app/backend/models"
 
@@ -14,15 +15,26 @@ import (
 var DB *gorm.DB
 
 func ConnectDB() {
-	dsn := fmt.Sprintf("host=%s user=%s password=%s dbnam%s port=%s sslmode=disable",
+	dsn := fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=disable",
 		os.Getenv("DB_HOST"),
+		os.Getenv("DB_PORT"),
 		os.Getenv("DB_USER"),
 		os.Getenv("DB_PASSWORD"),
 		os.Getenv("DB_NAME"),
-		os.Getenv("DB_PORT"),
 	)
 
-	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
+	var db *gorm.DB
+	var err error
+
+	for i := 0; i < 10; i++ {
+		db, err = gorm.Open(postgres.Open(dsn), &gorm.Config{})
+		if err == nil {
+			break
+		}
+		log.Printf("Menunggu database...")
+		time.Sleep(2 * time.Second)
+	}
+
 	if err != nil {
 		log.Fatal("Gagal konek ke databse: ", err)
 	}
@@ -30,6 +42,7 @@ func ConnectDB() {
 	db.AutoMigrate(&models.Product{})
 
 	DB = db
+
 	fmt.Println("Database terkoneksi dan migrasi selesai!")
 
 }
