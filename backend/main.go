@@ -9,9 +9,13 @@ import (
 
 	"github.com/joho/godotenv"
 	_ "github.com/lib/pq"
+	"github.com/luthfi/inventory-pos-app/backend/config"
 )
 
 func main() {
+	godotenv.Load()
+	config.ConnectDB()
+
 	err := godotenv.Load()
 	if err != nil {
 		log.Fatal("Gagal memuat file .env")
