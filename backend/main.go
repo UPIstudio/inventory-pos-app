@@ -4,16 +4,20 @@ import (
 	"database/sql"
 	"fmt"
 	"log"
+	"net/http"
 	"os"
 	"time"
 
 	"github.com/joho/godotenv"
 	_ "github.com/lib/pq"
 	"github.com/luthfi/inventory-pos-app/backend/config"
+	"github.com/luthfi/inventory-pos-app/backend/handlers"
 )
 
 func main() {
 	config.ConnectDB()
+
+	http.HandleFunc("/products", handlers.GetProductsHandler)
 
 	err := godotenv.Load()
 	if err != nil {
@@ -47,6 +51,9 @@ func main() {
 	if err != nil {
 		log.Fatal("Gagal konek ke database setelah 10 kali percobaan", err)
 	}
+
+	log.Println("Server berjalan      di :8080")
+	log.Fatal(http.ListenAndServe(":8080", nil))
 
 	select {}
 }
