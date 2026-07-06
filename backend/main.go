@@ -13,7 +13,6 @@ import (
 )
 
 func main() {
-	godotenv.Load()
 	config.ConnectDB()
 
 	err := godotenv.Load()
@@ -49,4 +48,5 @@ func main() {
 		log.Fatal("Gagal konek ke database setelah 10 kali percobaan", err)
 	}
 
+	select {}
 }
