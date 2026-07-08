@@ -21,7 +21,17 @@ func main() {
 		}
 	})
 
-	log.Println("Server berjalan      di :8080")
+	http.HandleFunc("/products/", func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == http.MethodPut {
+			handlers.UpdateProductHandler(w, r)
+		} else if r.Method == http.MethodDelete {
+			handlers.DeleteProductHandler(w, r)
+		} else {
+			http.Error(w, "Method tidak diizinkan", http.StatusMethodNotAllowed)
+		}
+	})
+
+	log.Println("Server berjalan di :8080")
 	log.Fatal(http.ListenAndServe(":8080", nil))
 
 	select {}
