@@ -1,111 +1,64 @@
 package handlers
 
 import (
-	"encoding/json"
-	"net/http"
 	"strconv"
-	"strings"
 
+	"github.com/gofiber/fiber/v2"
 	"github.com/luthfi/inventory-pos-app/backend/models"
 	"github.com/luthfi/inventory-pos-app/backend/repositories"
 )
 
-func GetProductsHandler(w http.ResponseWriter, r *http.Request) {
+type productHandler struct{}
+
+func GetProducts(c *fiber.Ctx) error {
 	products, err := repositories.GetAllProducts()
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
+		return c.Status(500).JSON(fiber.Map{"error": "Gagal mengambil data"})
 	}
-
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(products)
+	return c.JSON(products)
 }
 
-func CreateProductHandler(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodPost {
-		http.Error(w, "Method tidak diterima", http.StatusMethodNotAllowed)
-		return
+func CreateProduct(c *fiber.Ctx) error {
+	var products models.Product
+	if err := c.BodyParser(&products); err != nil {
+		return c.Status(400).JSON(fiber.Map{"error": "Format JSON salah"})
 	}
 
-	var product models.Product
-
-	err := json.NewDecoder(r.Body).Decode(&product)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
+	if err := repositories.SaveProduct(&products); err != nil {
+		return c.Status(500).JSON(fiber.Map{"error": "Gagal Menyimpan Produk"})
 	}
 
-	err = repositories.SaveProduct(&product)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	w.WriteHeader(http.StatusCreated)
-	json.NewEncoder(w).Encode(product)
+	return c.Status(201).JSON(products)
 }
 
-func UpdateProductHandler(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodPut {
-		http.Error(w, "Method tidak diterima", http.StatusMethodNotAllowed)
-		return
-	}
-
-	idStr := strings.TrimPrefix(r.URL.Path, "/products/")
-
-	if idStr == "" {
-		http.Error(w, "ID Produk tidak boleh kosong", http.StatusBadRequest)
-		return
-	}
-
-	id, err := strconv.ParseUint(idStr, 10, 64)
+func UpdateProduct(c *fiber.Ctx) error {
+	id, err := strconv.Atoi(c.Params("id"))
 	if err != nil {
-		http.Error(w, "ID tidak valid", http.StatusBadRequest)
-		return
+		return c.Status(400).JSON(fiber.Map{"error": "ID tidak valid"})
 	}
 
-	var product models.Product
-	if err := json.NewDecoder(r.Body).Decode(&product); err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
+	var products models.Product
+	if err := c.BodyParser(&products); err != nil {
+		return c.Status(400).JSON(fiber.Map{"error": "Format JSON salah"})
 	}
 
-	product.ID = uint(id)
-
-	if err := repositories.UpdateProduct(&product); err != nil {
-		http.Error(w, "Gagal mengupdate produk", http.StatusInternalServerError)
-		return
+	products.ID = uint(id)
+	if err := repositories.UpdateProduct(&products); err != nil {
+		return c.Status(500).JSON(fiber.Map{"error": "Gagal mengupdate data"})
 	}
 
-	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(product)
+	return c.JSON(products)
 }
 
-func DeleteProductHandler(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodDelete {
-		http.Error(w, "Method tidak diterima", http.StatusMethodNotAllowed)
-		return
-	}
-
-	idStr := strings.TrimPrefix(r.URL.Path, "/products/")
-
-	if idStr == "" {
-		http.Error(w, "ID Produk tidak boleh kosong", http.StatusBadRequest)
-		return
-	}
-
-	id, err := strconv.ParseUint(idStr, 10, 32)
+func DeleteProduct(c *fiber.Ctx) error {
+	id, err := strconv.Atoi(c.Params("id"))
 	if err != nil {
-		http.Error(w, "ID tidak valid", http.StatusBadRequest)
-		return
+		return c.Status(400).JSON(fiber.Map{"error": "ID Tidak Valid"})
 	}
 
 	if err := repositories.DeleteProduct(uint(id)); err != nil {
-		http.Error(w, "Gagal menghapus product", http.StatusInternalServerError)
-		return
+		return c.Status(500).JSON(fiber.Map{"error": "Gagal menghapus data"})
 	}
 
-	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(map[string]string{"message": "Product berhasil dihapus"})
-
+	return c.JSON(fiber.Map{"message": "Produk berhasil dihapus"})
 }

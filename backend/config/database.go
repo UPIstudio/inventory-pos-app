@@ -39,7 +39,7 @@ func ConnectDB() {
 		log.Fatal("Gagal konek ke databse: ", err)
 	}
 
-	db.AutoMigrate(&models.Product{})
+	db.AutoMigrate(&models.Product{}, &models.User{})
 
 	DB = db
 
