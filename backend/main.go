@@ -2,37 +2,38 @@ package main
 
 import (
 	"log"
-	"net/http"
 
+	"github.com/gofiber/fiber/v2"
 	"github.com/luthfi/inventory-pos-app/backend/config"
 	"github.com/luthfi/inventory-pos-app/backend/handlers"
+	"github.com/luthfi/inventory-pos-app/backend/middleware"
+	"github.com/luthfi/inventory-pos-app/backend/repositories"
+	"github.com/luthfi/inventory-pos-app/backend/services"
 )
 
 func main() {
 	config.ConnectDB()
+	app := fiber.New()
 
-	http.HandleFunc("/products", func(w http.ResponseWriter, r *http.Request) {
-		if r.Method == http.MethodGet {
-			handlers.GetProductsHandler(w, r)
-		} else if r.Method == http.MethodPost {
-			handlers.CreateProductHandler(w, r)
-		} else {
-			http.Error(w, "Method tidak diizinkan", http.StatusMethodNotAllowed)
-		}
-	})
+	userRepo := repositories.NewUserRepository(config.DB)
+	authService := services.NewAuthService(userRepo)
+	authHandler := handlers.NewAuthHandler(authService)
 
-	http.HandleFunc("/products/", func(w http.ResponseWriter, r *http.Request) {
-		if r.Method == http.MethodPut {
-			handlers.UpdateProductHandler(w, r)
-		} else if r.Method == http.MethodDelete {
-			handlers.DeleteProductHandler(w, r)
-		} else {
-			http.Error(w, "Method tidak diizinkan", http.StatusMethodNotAllowed)
-		}
-	})
+	app.Post("/register", authHandler.Register)
+	app.Post("/login", authHandler.Login)
+
+	productRoutes := app.Group("/products")
+	productRoutes.Use(middleware.AuthRequired(userRepo))
+
+	productRoutes.Get("/", handlers.GetProducts)
+	productRoutes.Post("/", handlers.CreateProduct)
+	productRoutes.Put("/:id", handlers.UpdateProduct)
+	productRoutes.Delete("/:id", handlers.DeleteProduct)
+
+	app.Post("/logout", middleware.AuthRequired(userRepo), authHandler.Logout)
 
 	log.Println("Server berjalan di :8080")
-	log.Fatal(http.ListenAndServe(":8080", nil))
+	log.Fatal(app.Listen(":8080"))
 
 	select {}
 }
